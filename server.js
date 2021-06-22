@@ -3,7 +3,6 @@ const app = express();
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const cookieParser = require('cookie-parser')
-
 require("dotenv").config();
 const connectDB = require("./config/db");
 
@@ -24,5 +23,5 @@ app.use(function (req, res, next) {
 });
 
 app.use("/api", require("./routes/auth"));
-
+// console.log(process.env.JWT_REFRESH_SECRET
 app.listen(8000, () => console.log("Backend server is running!"));

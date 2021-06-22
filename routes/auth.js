@@ -2,21 +2,19 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.SECRET;
-// const auth = require('../middleware/auth');
 const { check, validationResult } = require("express-validator");
 const verifyRefreshToken =require('../middlewares/auth.middlewares');
-
+const redis_client =require('../config/redis_connect')
 const User = require("../models/user");
 
 router.post("/users", async (req, res, next) => {
   const user = new User({
     username:req.body.user.username,
     email:req.body.user.email,
-    bio:null,
+    bio:null, 
     image:null,
   });
-
+  console.log(process.env.JWT_ACCESS_TIME)
   await user.setPassword(req.body.user.password);
   await user.save()
 

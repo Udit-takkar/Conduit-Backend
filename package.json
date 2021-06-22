@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js",
-    "dev": "node server.js"
+    "dev": "node -r dotenv/config server.js dotenv_config_path=./.env"
   },
   "keywords": [],
   "author": "",
@@ -17,12 +17,14 @@
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^10.0.0",
+    "env-cmd": "^10.1.0",
     "express": "^4.17.1",
     "express-validator": "^6.12.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.12.14",
     "mongoose-unique-validator": "^2.0.3",
     "nodemon": "^2.0.7",
+    "path": "^0.12.7",
     "redis": "^3.1.2",
     "validator": "^13.6.0"
   }
