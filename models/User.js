@@ -49,19 +49,12 @@ UserSchema.methods.setPassword = function (password) {
 };
 
 UserSchema.methods.generateJWT = function () {
-  const today = new Date();
-  const exp = new Date(today);
-  exp.setDate(today.getDate() + 60);
-
-  return jwt.sign(
-    {
-      id: this._id,
-      username: this.username,
-      exp: parseInt(exp.getTime() / 1000),
-    },
-    secret
-  );
+ 
+  const user_id = this._id;
+  return jwt.sign({sub: user_id}, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_TIME});
 };
+
+
 
 UserSchema.methods.toAuthJSON = function () {
 

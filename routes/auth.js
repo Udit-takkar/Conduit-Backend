@@ -5,24 +5,27 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.SECRET;
 // const auth = require('../middleware/auth');
 const { check, validationResult } = require("express-validator");
+const verifyRefreshToken =require('../middlewares/auth.middlewares');
 
 const User = require("../models/user");
 
 router.post("/users", async (req, res, next) => {
-  const user = new User();
+  const user = new User({
+    username:req.body.user.username,
+    email:req.body.user.email,
+    bio:null,
+    image:null,
+  });
 
-  user.username = req.body.user.username;
-  user.email = req.body.user.email;
-  user.setPassword(req.body.user.password);
-  user.bio=null;
-  user.image=null;
+  await user.setPassword(req.body.user.password);
+  await user.save()
 
-  user
-    .save()
-    .then(function () {
-      return res.json({ user: user.toAuthJSON() });
-    })
-    .catch(next);
+  const user_id = user._id;
+  const refresh_token = GenerateRefreshToken(user_id);
+  setTokenCookie(res, refresh_token)
+
+   return res.status(201).json({ user: user.toAuthJSON() });
+
 });
 
 router.post(
@@ -56,4 +59,58 @@ router.post(
     }
   }
 );
+
+// Logout function
+async function Logout (req, res) {
+  const user_id = req.userData.sub;
+  const token =  req.headers.authorization.split(' ')[1];
+
+  // remove the refresh token
+  await redis_client.del(user_id.toString());
+
+  // blacklist current access token
+  await redis_client.set('BL_' + user_id.toString(), token);
+  
+  return res.json({status: true, message: "success."});
+}
+
+// router.post("/refresh",verifyRefreshToken, (req, res, next) => {
+
+//   // If the refresh token is valid, create a new accessToken and return it.
+//         const user_id = req.userData.sub;
+//         const access_token = jwt.sign({sub: user_id}, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_TIME});
+//         const refresh_token = GenerateRefreshToken(user_id);
+//         setTokenCookie(res, refresh_token)
+
+//         return res.json({ success: true, accessToken });
+ 
+// });
+
+//helpers
+
+function setTokenCookie(res, token)
+{
+    // create http only cookie with refresh token that expires in 7 days
+    const cookieOptions = {
+        httpOnly: true,
+        expires: new Date(Date.now() + 7*24*60*60*1000)
+    };
+    res.cookie('refreshToken', token, cookieOptions);
+}
+
+
+
+function GenerateRefreshToken(user_id) {
+const refresh_token = jwt.sign({ sub: user_id }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_TIME });
+
+redis_client.get(user_id.toString(), (err, data) => {
+    if(err) throw err;
+
+    redis_client.set(user_id.toString(), JSON.stringify({token: refresh_token}));
+})
+
+return refresh_token;
+}
+
+
 module.exports = router;
