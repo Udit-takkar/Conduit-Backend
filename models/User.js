@@ -64,12 +64,13 @@ UserSchema.methods.generateJWT = function () {
 };
 
 UserSchema.methods.toAuthJSON = function () {
+
   return {
     username: this.username,
     email: this.email,
     token: this.generateJWT(),
     bio: this.bio,
-    image: this.image,
+    image: this.image || "https://static.productionready.io/images/smiley-cyrus.jpg" ,
   };
 };
 
