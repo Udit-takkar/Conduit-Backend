@@ -49,21 +49,30 @@ UserSchema.methods.setPassword = function (password) {
 };
 
 UserSchema.methods.generateJWT = function () {
- 
   const user_id = this._id;
-  return jwt.sign({sub: user_id}, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_TIME});
+  return jwt.sign({ sub: user_id }, process.env.JWT_ACCESS_SECRET, {
+    expiresIn: process.env.JWT_ACCESS_TIME,
+  });
 };
 
-
-
 UserSchema.methods.toAuthJSON = function () {
-
   return {
     username: this.username,
     email: this.email,
     token: this.generateJWT(),
     bio: this.bio,
-    image: this.image || "https://static.productionready.io/images/smiley-cyrus.jpg" ,
+    image:
+      this.image || "https://static.productionready.io/images/smiley-cyrus.jpg",
+  };
+};
+
+UserSchema.methods.toUserJSON = function () {
+  return {
+    username: this.username,
+    email: this.email,
+    bio: this.bio,
+    image:
+      this.image || "https://static.productionready.io/images/smiley-cyrus.jpg",
   };
 };
 
@@ -115,5 +124,4 @@ UserSchema.methods.isFollowing = function (id) {
   });
 };
 
-
-module.exports =  mongoose.model('User', UserSchema)
+module.exports = mongoose.model("User", UserSchema);

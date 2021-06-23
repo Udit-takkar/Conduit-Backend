@@ -23,5 +23,6 @@ app.use(function (req, res, next) {
 });
 
 app.use("/api", require("./routes/auth"));
+app.use("/api/user",require("./routes/user"))
 // console.log(process.env.JWT_REFRESH_SECRET
 app.listen(8000, () => console.log("Backend server is running!"));
