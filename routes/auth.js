@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { check, validationResult } = require("express-validator");
-const verifyRefreshToken =require('../middlewares/auth.middlewares');
+const {verifyRefreshToken} =require('../middlewares/auth.middlewares');
 const redis_client =require('../config/redis_connect')
 const User = require("../models/user");
 
@@ -72,17 +72,17 @@ async function Logout (req, res) {
   return res.json({status: true, message: "success."});
 }
 
-// router.post("/refresh",verifyRefreshToken, (req, res, next) => {
+router.post("/refresh",verifyRefreshToken, (req, res) => {
 
-//   // If the refresh token is valid, create a new accessToken and return it.
-//         const user_id = req.userData.sub;
-//         const access_token = jwt.sign({sub: user_id}, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_TIME});
-//         const refresh_token = GenerateRefreshToken(user_id);
-//         setTokenCookie(res, refresh_token)
+  // If the refresh token is valid, create a new accessToken and return it.
+        const user_id = req.userData.sub;
+        const access_token = jwt.sign({sub: user_id}, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_TIME});
+        const refresh_token = GenerateRefreshToken(user_id);
+        setTokenCookie(res, refresh_token)
 
-//         return res.json({ success: true, accessToken });
+        return res.json({ success: true, access_token });
  
-// });
+});
 
 //helpers
 
