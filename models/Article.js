@@ -37,13 +37,12 @@ ArticleSchema.methods.slugify = function () {
 ArticleSchema.methods.updateFavoriteCount = function () {
   const article = this;
 
-  return User.count({ favorites: { $in: [article._id] } }).then(function (
-    count
-  ) {
-    article.favoritesCount = count;
-
-    return article.save();
-  });
+  return User.countDocuments({ favorites: { $in: [article._id] } }).then(
+    function (count) {
+      article.favoritesCount = count;
+      return article.save();
+    }
+  );
 };
 
 ArticleSchema.methods.toJSONFor = function (user) {

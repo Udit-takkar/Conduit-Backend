@@ -26,5 +26,6 @@ app.use("/api", require("./routes/auth"));
 app.use("/api/user", require("./routes/user"));
 app.use("/api/profiles", require("./routes/profiles"));
 app.use("/api/articles", require("./routes/articles"));
+app.use("/api/tags", require("./routes/tags"));
 // console.log(process.env.JWT_REFRESH_SECRET
 app.listen(8000, () => console.log("Backend server is running!"));

@@ -1,9 +1,13 @@
 const jwt = require("jsonwebtoken");
+const { connected } = require("../config/redis_connect");
 const redis_client = require("../config/redis_connect");
 
 function verifyToken(req, res, next) {
   try {
-    // Bearer tokenstring
+    if (typeof req.headers.authorization === "undefined") {
+      req.token = null;
+      next();
+    }
     const token = req.headers.authorization.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
@@ -23,6 +27,7 @@ function verifyToken(req, res, next) {
       next();
     });
   } catch (error) {
+    console.log(error);
     return res.status(401).json({
       status: false,
       message: "Your session is not valid.",

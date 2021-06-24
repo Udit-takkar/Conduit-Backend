@@ -87,7 +87,7 @@ UserSchema.methods.toProfileJSONFor = function (user) {
 };
 
 UserSchema.methods.favorite = function (id) {
-  if (this.favorites.indexOf(id) === -1) {
+  if (this.favorites && this.favorites.indexOf(id) === -1) {
     this.favorites.push(id);
   }
 
@@ -100,6 +100,7 @@ UserSchema.methods.unfavorite = function (id) {
 };
 
 UserSchema.methods.isFavorite = function (id) {
+  console.log(this.favorites);
   return this.favorites.some(function (favoriteId) {
     return favoriteId.toString() === id.toString();
   });
