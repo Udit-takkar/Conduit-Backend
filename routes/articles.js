@@ -58,7 +58,7 @@ router.get("/", async (req, res) => {
       articlesCount,
     });
   } catch (err) {
-    return res.status(404).send(err);
+    return res.status(500).send(err);
   }
 });
 
@@ -98,7 +98,7 @@ router.get("/feed", verifyToken, async (req, res) => {
       });
     });
   } catch (err) {
-    return res.sendStatus(404);
+    return res.status(500).send(err);
   }
 });
 
@@ -180,12 +180,15 @@ router.put("/:slug", verifyToken, async (req, res) => {
     }
   } catch (err) {
     console.log(err);
-    res.send(err);
+    return res.status(500).send(err);
   }
 });
 
 // Delete Article
 router.delete("/:slug", verifyToken, async (req, res) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
     const { slug } = req.params;
     const user = await User.findById(req.userData.sub);
@@ -200,16 +203,22 @@ router.delete("/:slug", verifyToken, async (req, res) => {
       return res.status(403).send("UnAuthorized");
     }
   } catch (err) {
-    return res.send(err);
+    return res.status(500).send(err);
   }
 });
 
 //  Favorite article
 router.post("/:slug/favorite", verifyToken, async (req, res, next) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
     const { slug } = req.params;
 
     const user = await User.findOne({ _id: req.userData.sub });
+    if (!user) {
+      return res.sendStatus(401);
+    }
     const article = await Article.findOne({ slug });
 
     if (!article) return res.status(404).status("Article Not found");
@@ -228,11 +237,19 @@ router.post("/:slug/favorite", verifyToken, async (req, res, next) => {
   }
 });
 
+// Unfavorite an Article
 router.delete("/:slug/unfavorite", verifyToken, async (req, res, next) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
     const { slug } = req.params;
 
     const user = await User.findOne({ _id: req.userData.sub });
+    if (!user) {
+      return res.sendStatus(401);
+    }
+
     const article = await Article.findOne({ slug });
     if (!article) return res.status(404);
 
@@ -246,13 +263,15 @@ router.delete("/:slug/unfavorite", verifyToken, async (req, res, next) => {
     return res.status(200).send({ article: article.toJSONFor(user) });
   } catch (err) {
     console.log(err);
-    return res.send(err);
+    return res.status(500).send(err);
   }
 });
 
 // Post a Comment
-
 router.post("/:slug/comments", verifyToken, async (req, res) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
     const { slug } = req.params;
 
@@ -262,6 +281,10 @@ router.post("/:slug/comments", verifyToken, async (req, res) => {
 
     const comment = new Comment({ body: req.body.comment.body });
     const user = await User.findOne({ _id: req.userData.sub });
+    if (!user) {
+      return res.sendStatus(401);
+    }
+
     const article = await Article.findOne({ slug });
     if (!article) return res.status(400).send("Article Not found");
 
@@ -273,17 +296,20 @@ router.post("/:slug/comments", verifyToken, async (req, res) => {
     await article.save();
 
     comment.populate("author", function (err) {
-      if (err) return res.send(err);
+      if (err) return res.status(500).send(err);
       res.status(200).send({ comment: comment.toJSONFor(user) });
     });
   } catch (err) {
     console.log(err);
-    res.send(err);
+    return res.status(500).send(err);
   }
 });
 
 // Delete a comment
 router.delete("/:slug/comments/:id", verifyToken, async (req, res) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
     const { slug } = req.params;
     const { id } = req.params;
@@ -309,23 +335,25 @@ router.delete("/:slug/comments/:id", verifyToken, async (req, res) => {
       await article.save();
       await Comment.findByIdAndDelete({ _id: id });
 
-      return res.status(200).send("Success");
+      return res.status(204);
     } else {
-      res.status(403).send("Unauthorized");
+      return res.status(403).send("Unauthorized");
     }
   } catch (err) {
     console.log(err);
-    return res.send(err);
+    return res.status(500).send(err);
   }
 });
 
+// Get Comments for an Article by slug
 router.get("/:slug/comments", verifyToken, async (req, res) => {
   try {
     let user = null;
     const { slug } = req.params;
     if (req.token) {
-      user = await await User.findById({ _id: req.userData.sub });
+      user = await User.findById({ _id: req.userData.sub });
     }
+    // console.log(user);
     const article = await Article.findOne({ slug });
     if (!article) return res.status(404).status("Article Not found");
 
@@ -334,15 +362,21 @@ router.get("/:slug/comments", verifyToken, async (req, res) => {
       article.comments.map(async function (comment) {
         return comment.populate("author").execPopulate();
       })
-    ).then((comments, err) => {
-      return res.send({
-        comments: comments.map((comment) => {
-          return comment.toJSONFor(user);
-        }),
+    )
+      .then((comments, err) => {
+        if (!comments) return res.sendStatus(404);
+        return res.send({
+          comments: comments.map((comment) => {
+            return comment.toJSONFor(user);
+          }),
+        });
+      })
+      .catch(function (err) {
+        return res.status(500).send(err.message);
       });
-    });
   } catch (err) {
-    return res.send(err);
+    console.log(err);
+    return res.status(500).send(err);
   }
 });
 
