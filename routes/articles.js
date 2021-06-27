@@ -8,6 +8,7 @@ const { verifyToken } = require("../middlewares/auth.middlewares");
 const slug = require("slug");
 const { findById, findOneAndDelete } = require("../models/Article");
 
+// Get All Articles
 router.get("/", async (req, res) => {
   try {
     let loggedInUser = null;
@@ -63,6 +64,7 @@ router.get("/", async (req, res) => {
 
 //  Get Feed Articles
 router.get("/feed", verifyToken, async (req, res) => {
+  if (!req.token) return res.sendStatus(401);
   try {
     let limit = 20;
     let offset = 0;
@@ -76,9 +78,6 @@ router.get("/feed", verifyToken, async (req, res) => {
     }
 
     const user = await User.findById({ _id: req.userData.sub });
-    if (!user) {
-      return res.status(401);
-    }
 
     Promise.all([
       Article.find({ author: { $in: user.following } })
@@ -98,7 +97,9 @@ router.get("/feed", verifyToken, async (req, res) => {
         articlesCount: articlesCount,
       });
     });
-  } catch (err) {}
+  } catch (err) {
+    return res.sendStatus(404);
+  }
 });
 
 // Get article By Slug
@@ -109,25 +110,28 @@ router.get("/:slug", async (req, res) => {
 
     if (!article) return res.status(404).send("Not Found");
 
-    await article.populate({
-      path: "author",
-    });
+    await article
+      .populate({
+        path: "author",
+      })
+      .execPopulate();
 
     return res.status(200).send({ article: article.toJSONFor() });
   } catch (err) {
-    return res.send(err);
+    return res.status(500).send(err);
   }
 });
 
 //  Create Article
 router.post("/", verifyToken, async (req, res) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
     // console.log(req.userData.sub);
     const user = await User.findById({ _id: req.userData.sub });
 
-    if (!user) {
-      return res.status(401).send("User UnAuthorized");
-    }
+    // if(!user){}
 
     const article = new Article(req.body.article);
     article.author = user;
@@ -135,7 +139,7 @@ router.post("/", verifyToken, async (req, res) => {
 
     return res.status(201).send({ article: article.toJSONFor(user) });
   } catch (err) {
-    return res.send(err);
+    return res.status(500).send(err);
   }
 });
 

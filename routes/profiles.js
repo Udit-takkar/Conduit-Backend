@@ -21,14 +21,18 @@ router.get("/:username", async (req, res) => {
 });
 
 router.post("/:username/follow", verifyToken, async (req, res) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
-    if (!req.token) {
-      return res.sendStatus(403);
-    }
     const { username } = req.params;
 
     const userToFollow = await User.findOne({ username });
     const user = await User.findById({ _id: req.userData.sub });
+
+    if (userToFollow._id.toString() === user._id.toString()) {
+      return res.sendStatus(400);
+    }
     await user.follow(userToFollow._id);
 
     return res
@@ -41,11 +45,11 @@ router.post("/:username/follow", verifyToken, async (req, res) => {
 });
 // Unfollow a user
 router.delete("/:username/follow", verifyToken, async (req, res) => {
-  try {
-    if (!req.token) {
-      return res.sendStatus(403);
-    }
+  if (!req.token) {
+    return res.sendStatus(403);
+  }
 
+  try {
     const { username } = req.params;
     const user = await User.findById({ _id: req.userData.sub });
     const UserToUnfollow = await User.findOne({ username });

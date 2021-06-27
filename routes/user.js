@@ -6,6 +6,9 @@ const { verifyToken } = require("../middlewares/auth.middlewares");
 
 // Get Current User
 router.get("/", verifyToken, async (req, res) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
     const user = await User.findById({ _id: req.userData.sub });
     // console.log(user)
@@ -18,6 +21,9 @@ router.get("/", verifyToken, async (req, res) => {
 // Update User
 
 router.patch("/", verifyToken, async (req, res) => {
+  if (!req.token) {
+    res.sendStatus(401);
+  }
   try {
     const user = await User.findById({ _id: req.userData.sub });
 

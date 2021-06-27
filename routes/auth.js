@@ -21,7 +21,10 @@ router.post(
     check(
       "user.username",
       "username should only contain 0-9 digits and Alphabets"
-    ).matches(/^[a-zA-Z0-9]+$/),
+    )
+      .matches(/^[a-zA-Z0-9]+$/)
+      .not()
+      .isEmpty(),
   ],
   async (req, res, next) => {
     const errors = validationResult(req);
@@ -46,7 +49,7 @@ router.post(
 
       return res.status(201).json({ user: user.toAuthJSON() });
     } catch (err) {
-      res.status(422).send(err);
+      res.status(500).send(err);
     }
   }
 );
@@ -71,7 +74,7 @@ router.post(
 
       if (!user) return res.status(400).json({ msg: "Invalid Credentials" });
 
-      const isMatch = user.validPassword(password);
+      const isMatch = await bcrypt.compare(password, user.password);
 
       if (!isMatch) return res.status(400).json({ msg: "Invalid Credentials" });
 

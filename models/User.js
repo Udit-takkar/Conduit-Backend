@@ -3,6 +3,7 @@ const uniqueValidator = require("mongoose-unique-validator");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const secret = require("../config").secret;
+const bcrypt = require("bcryptjs");
 
 const UserSchema = new mongoose.Schema(
   {
@@ -26,26 +27,16 @@ const UserSchema = new mongoose.Schema(
     image: String,
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Article" }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    hash: String,
-    salt: String,
+    password: { type: String, required: true },
   },
   { timestamps: true }
 );
 
 UserSchema.plugin(uniqueValidator, { message: "is already taken." });
 
-UserSchema.methods.validPassword = function (password) {
-  const hash = crypto
-    .pbkdf2Sync(password, this.salt, 10000, 512, "sha512")
-    .toString("hex");
-  return this.hash === hash;
-};
-
-UserSchema.methods.setPassword = function (password) {
-  this.salt = crypto.randomBytes(16).toString("hex");
-  this.hash = crypto
-    .pbkdf2Sync(password, this.salt, 10000, 512, "sha512")
-    .toString("hex");
+UserSchema.methods.setPassword = async function (password) {
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(password, salt);
 };
 
 UserSchema.methods.generateJWT = function () {
