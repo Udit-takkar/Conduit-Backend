@@ -4,6 +4,11 @@ const User = require("../models/User");
 const { route } = require("./auth");
 const { verifyToken } = require("../middlewares/auth.middlewares");
 
+/**
+ * @route {get} /profiles/:username
+ * @desc get user from it's username
+ * @access Authentication Optional
+ */
 router.get("/:username", async (req, res) => {
   try {
     let loggedInUser = null;
@@ -20,6 +25,11 @@ router.get("/:username", async (req, res) => {
   }
 });
 
+/**
+ * @route {post} /profiles/:username/follow
+ * @desc Follows a paricular user
+ * @access Authentication Required
+ */
 router.post("/:username/follow", verifyToken, async (req, res) => {
   if (!req.token) {
     return res.sendStatus(401);
@@ -43,7 +53,12 @@ router.post("/:username/follow", verifyToken, async (req, res) => {
     res.send(err);
   }
 });
-// Unfollow a user
+
+/**
+ * @route {delete} /profiles/:username/follow
+ * @desc UnFollows a paricular user
+ * @access Authentication Required
+ */
 router.delete("/:username/follow", verifyToken, async (req, res) => {
   if (!req.token) {
     return res.sendStatus(403);

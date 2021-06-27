@@ -8,7 +8,11 @@ const { verifyToken } = require("../middlewares/auth.middlewares");
 const slug = require("slug");
 const { findById, findOneAndDelete } = require("../models/Article");
 
-// Get All Articles
+/**
+ * @route {get} /articles
+ * @desc return All the Articles
+ * @access Authentication Optional
+ */
 router.get("/", async (req, res) => {
   try {
     let loggedInUser = null;
@@ -62,7 +66,11 @@ router.get("/", async (req, res) => {
   }
 });
 
-//  Get Feed Articles
+/**
+ * @route {get} /articles/feed
+ * @desc returns articles to show in the feed of the user
+ * @access Authentication Required
+ */
 router.get("/feed", verifyToken, async (req, res) => {
   if (!req.token) return res.sendStatus(401);
   try {
@@ -102,7 +110,11 @@ router.get("/feed", verifyToken, async (req, res) => {
   }
 });
 
-// Get article By Slug
+/**
+ * @route {get} /articles/:slug
+ * @desc return Article by slug
+ * @access Authentication Not Required
+ */
 router.get("/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
@@ -122,7 +134,11 @@ router.get("/:slug", async (req, res) => {
   }
 });
 
-//  Create Article
+/**
+ * @route {post} /articles
+ * @desc Creates a Article
+ * @access Authentication Required
+ */
 router.post("/", verifyToken, async (req, res) => {
   if (!req.token) {
     return res.sendStatus(401);
@@ -184,7 +200,11 @@ router.put("/:slug", verifyToken, async (req, res) => {
   }
 });
 
-// Delete Article
+/**
+ * @route {delete} /articles/:slug
+ * @desc Deletes the article by slug
+ * @access Authentication Required
+ */
 router.delete("/:slug", verifyToken, async (req, res) => {
   if (!req.token) {
     return res.sendStatus(401);
@@ -207,7 +227,11 @@ router.delete("/:slug", verifyToken, async (req, res) => {
   }
 });
 
-//  Favorite article
+/**
+ * @route {post} /articles/:slug/favorite
+ * @desc marks an article favorite
+ * @access Authentication Required
+ */
 router.post("/:slug/favorite", verifyToken, async (req, res, next) => {
   if (!req.token) {
     return res.sendStatus(401);
@@ -237,7 +261,11 @@ router.post("/:slug/favorite", verifyToken, async (req, res, next) => {
   }
 });
 
-// Unfavorite an Article
+/**
+ * @route {delete} /articles/:slug/favorite
+ * @desc marks an article unfavorite
+ * @access Authentication Required
+ */
 router.delete("/:slug/unfavorite", verifyToken, async (req, res, next) => {
   if (!req.token) {
     return res.sendStatus(401);
@@ -267,7 +295,11 @@ router.delete("/:slug/unfavorite", verifyToken, async (req, res, next) => {
   }
 });
 
-// Post a Comment
+/**
+ * @route {post} /:slug/comments
+ * @desc Creates a comment on a article by the user
+ * @access Authentication Required
+ */
 router.post("/:slug/comments", verifyToken, async (req, res) => {
   if (!req.token) {
     return res.sendStatus(401);
@@ -305,7 +337,11 @@ router.post("/:slug/comments", verifyToken, async (req, res) => {
   }
 });
 
-// Delete a comment
+/**
+ * @route {delete} /articles/:slug/comments/:id
+ * @desc deletes a comment on an article
+ * @access Authentication Required
+ */
 router.delete("/:slug/comments/:id", verifyToken, async (req, res) => {
   if (!req.token) {
     return res.sendStatus(401);
@@ -317,27 +353,22 @@ router.delete("/:slug/comments/:id", verifyToken, async (req, res) => {
     let article = await Article.findOne({ slug });
     if (!article) return res.status(404).send("Not Found");
 
-    if (!article.comments.includes(id)) {
-      return res.status(404).send("Not Found");
+    const commentIndex = article.comments.indexOf(id);
+    if (commentIndex === -1) {
+      return res.status(404).send("Comment  not Found");
     }
-    await article.populate("comments").execPopulate();
-    // console.log(article.comments);
-    const comment = article.comments.find((comment) => {
-      console.log(comment._id, id, comment._id.toString() === id.toString());
-      return comment._id.toString() === id.toString();
-    });
+
+    const comment = await Comment.findById({ _id: id });
+    if (!commentIndex) return res.status(404).send("Comment  not Found");
 
     if (comment.author.toString() === req.userData.sub.toString()) {
-      article.comments = article.comments.filter((comment) => {
-        return comment._id.toString() !== id.toString();
-      });
-      console.log(article);
+      article.comments.splice(commentIndex, 1);
       await article.save();
       await Comment.findByIdAndDelete({ _id: id });
 
-      return res.status(204);
+      return res.sendStatus(204);
     } else {
-      return res.status(403).send("Unauthorized");
+      return res.sendStatus(403);
     }
   } catch (err) {
     console.log(err);
@@ -345,7 +376,11 @@ router.delete("/:slug/comments/:id", verifyToken, async (req, res) => {
   }
 });
 
-// Get Comments for an Article by slug
+/**
+ * @route {get} /articles/:slug/comments
+ * @desc gets all comments of an article
+ * @access Authentication Optional
+ */
 router.get("/:slug/comments", verifyToken, async (req, res) => {
   try {
     let user = null;
@@ -363,7 +398,7 @@ router.get("/:slug/comments", verifyToken, async (req, res) => {
         return comment.populate("author").execPopulate();
       })
     )
-      .then((comments, err) => {
+      .then((comments) => {
         if (!comments) return res.sendStatus(404);
         return res.send({
           comments: comments.map((comment) => {

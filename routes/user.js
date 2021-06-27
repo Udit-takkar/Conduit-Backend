@@ -4,7 +4,11 @@ const User = require("../models/User");
 const { route } = require("./auth");
 const { verifyToken } = require("../middlewares/auth.middlewares");
 
-// Get Current User
+/**
+ * @route {get} /user
+ * @desc return currently signed in user
+ * @access Authentication Required
+ */
 router.get("/", verifyToken, async (req, res) => {
   if (!req.token) {
     return res.sendStatus(401);
@@ -18,7 +22,11 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// Update User
+/**
+ * @route {patch} /user
+ * @desc update the user data
+ * @access Authentication Required
+ */
 
 router.patch("/", verifyToken, async (req, res) => {
   if (!req.token) {
