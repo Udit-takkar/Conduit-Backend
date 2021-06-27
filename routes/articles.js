@@ -131,7 +131,9 @@ router.post("/", verifyToken, async (req, res) => {
     // console.log(req.userData.sub);
     const user = await User.findById({ _id: req.userData.sub });
 
-    // if(!user){}
+    if (!user) {
+      return res.status(401).send("Invalid User");
+    }
 
     const article = new Article(req.body.article);
     article.author = user;
@@ -145,10 +147,15 @@ router.post("/", verifyToken, async (req, res) => {
 
 //  Update Article
 router.put("/:slug", verifyToken, async (req, res) => {
+  if (!req.token) {
+    return res.sendStatus(401);
+  }
   try {
     const { slug } = req.params;
     const user = await User.findById(req.userData.sub);
     const article = await Article.findOne({ slug }).populate("author");
+
+    if (!article) return res.sendStatus(404);
 
     if (article?.author._id.toString() === user._id.toString()) {
       if (typeof req.body.article.title !== "undefined") {
@@ -184,9 +191,11 @@ router.delete("/:slug", verifyToken, async (req, res) => {
     const user = await User.findById(req.userData.sub);
     const article = await Article.findOne({ slug });
 
+    if (!article) return res.status(404).status("Article Not found");
+
     if (article.author._id.toString() === user._id.toString()) {
       await Article.deleteOne({ slug });
-      return res.status(200).send("Success");
+      return res.status(204);
     } else {
       return res.status(403).send("UnAuthorized");
     }
@@ -202,7 +211,9 @@ router.post("/:slug/favorite", verifyToken, async (req, res, next) => {
 
     const user = await User.findOne({ _id: req.userData.sub });
     const article = await Article.findOne({ slug });
-    if (!article) return res.status(404);
+
+    if (!article) return res.status(404).status("Article Not found");
+
     await article.populate("author", function (err) {
       console.log(err);
     });
@@ -316,7 +327,7 @@ router.get("/:slug/comments", verifyToken, async (req, res) => {
       user = await await User.findById({ _id: req.userData.sub });
     }
     const article = await Article.findOne({ slug });
-    if (!article) return res.sendStatus(404);
+    if (!article) return res.status(404).status("Article Not found");
 
     await article.populate("comments").execPopulate();
     Promise.all(
