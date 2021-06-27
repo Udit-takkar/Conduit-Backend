@@ -173,20 +173,20 @@ router.put("/:slug", verifyToken, async (req, res) => {
 
     if (!article) return res.sendStatus(404);
 
-    if (article?.author._id.toString() === user._id.toString()) {
+    if (article.author._id.toString() === user._id.toString()) {
       if (typeof req.body.article.title !== "undefined") {
         article.title = req.body.article.title;
         article.slug = slugify(req.body.article.title);
       }
-      if (typeof req.body?.article.description !== "undefined") {
+      if (typeof req.body.article.description !== "undefined") {
         article.description = req.body.article.description;
       }
 
-      if (typeof req.body?.article.body !== "undefined") {
+      if (typeof req.body.article.body !== "undefined") {
         article.body = req.body.article.body;
       }
 
-      if (typeof req.body?.article.tagList !== "undefined") {
+      if (typeof req.body.article.tagList !== "undefined") {
         article.tagList = req.body.article.tagList;
       }
 
@@ -307,7 +307,7 @@ router.post("/:slug/comments", verifyToken, async (req, res) => {
   try {
     const { slug } = req.params;
 
-    if (typeof req.body?.comment?.body === "undefined") {
+    if (typeof req.body.comment.body === "undefined") {
       return res.status(400).send("Empty Comment");
     }
 
