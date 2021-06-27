@@ -2,29 +2,56 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { check, validationResult } = require("express-validator");
+const { body, check, validationResult } = require("express-validator");
 const { verifyRefreshToken } = require("../middlewares/auth.middlewares");
 const redis_client = require("../config/redis_connect");
 const User = require("../models/User");
 
-router.post("/users", async (req, res, next) => {
-  const user = new User({
-    username: req.body.user.username,
-    email: req.body.user.email,
-    bio: null,
-    image: null,
-  });
-  console.log(process.env.JWT_ACCESS_TIME);
-  await user.setPassword(req.body.user.password);
-  await user.save();
+// Register User
+router.post(
+  "/users",
+  [
+    check("user.email", "Please include a valid email").isEmail(),
+    check(
+      "user.password",
+      "Password is required (Must be atleast 6 characters long)"
+    )
+      .exists()
+      .isLength({ min: 6 }),
+    check(
+      "user.username",
+      "username should only contain 0-9 digits and Alphabets"
+    ).matches(/^[a-zA-Z0-9]+$/),
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
 
-  const user_id = user._id;
-  const refresh_token = GenerateRefreshToken(user_id);
-  setTokenCookie(res, refresh_token);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const user = new User({
+        username: req.body.user.username,
+        email: req.body.user.email,
+        bio: null,
+        image: null,
+      });
 
-  return res.status(201).json({ user: user.toAuthJSON() });
-});
+      await user.setPassword(req.body.user.password);
+      await user.save();
 
+      const user_id = user._id;
+      const refresh_token = GenerateRefreshToken(user_id);
+      setTokenCookie(res, refresh_token);
+
+      return res.status(201).json({ user: user.toAuthJSON() });
+    } catch (err) {
+      res.status(422).send(err);
+    }
+  }
+);
+
+//  Login user
 router.post(
   "/users/login",
   [
@@ -48,6 +75,10 @@ router.post(
 
       if (!isMatch) return res.status(400).json({ msg: "Invalid Credentials" });
 
+      const user_id = user._id;
+      const refresh_token = GenerateRefreshToken(user_id);
+      setTokenCookie(res, refresh_token);
+
       return res.status(200).json({ user: user.toAuthJSON() });
     } catch (err) {
       console.error(err.message);
@@ -70,6 +101,7 @@ async function Logout(req, res) {
   return res.json({ status: true, message: "success." });
 }
 
+// Generate Access Token
 router.post("/refresh", verifyRefreshToken, (req, res) => {
   // If the refresh token is valid, create a new accessToken and return it.
   const user_id = req.userData.sub;

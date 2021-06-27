@@ -6,9 +6,15 @@ const { verifyToken } = require("../middlewares/auth.middlewares");
 
 router.get("/:username", async (req, res) => {
   try {
+    let loggedInUser = null;
+    if (req.token) {
+      loggedInUser = await User.findById({ _id: req.userData.sub });
+    }
     const { username } = req.params;
     const user = await User.findOne({ username });
-    return res.status(200).send({ profile: user.toProfileJSONFor() });
+    return res
+      .status(200)
+      .send({ profile: user.toProfileJSONFor(loggedInUser) });
   } catch (err) {
     res.status(404).send({ err, message: "Not Found" });
   }
@@ -16,6 +22,9 @@ router.get("/:username", async (req, res) => {
 
 router.post("/:username/follow", verifyToken, async (req, res) => {
   try {
+    if (!req.token) {
+      return res.sendStatus(403);
+    }
     const { username } = req.params;
 
     const userToFollow = await User.findOne({ username });
@@ -26,12 +35,17 @@ router.post("/:username/follow", verifyToken, async (req, res) => {
       .status(200)
       .send({ profile: userToFollow.toProfileJSONFor(user) });
   } catch (err) {
+    console.log(err);
     res.send(err);
   }
 });
 // Unfollow a user
 router.delete("/:username/follow", verifyToken, async (req, res) => {
   try {
+    if (!req.token) {
+      return res.sendStatus(403);
+    }
+
     const { username } = req.params;
     const user = await User.findById({ _id: req.userData.sub });
     const UserToUnfollow = await User.findOne({ username });
