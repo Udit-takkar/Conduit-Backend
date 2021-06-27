@@ -7,7 +7,10 @@ const { verifyRefreshToken } = require("../middlewares/auth.middlewares");
 const redis_client = require("../config/redis_connect");
 const User = require("../models/User");
 
-// Register User
+/**
+ * @route {Post} /users
+ * @desc registers a user
+ */
 router.post(
   "/users",
   [
@@ -54,7 +57,11 @@ router.post(
   }
 );
 
-//  Login user
+
+/**
+ * @route {Post} /users/login
+ * @desc logs in a user
+ */
 router.post(
   "/users/login",
   [
