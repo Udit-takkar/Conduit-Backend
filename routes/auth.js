@@ -48,15 +48,18 @@ router.post(
 
       const user_id = user._id;
       const refresh_token = GenerateRefreshToken(user_id);
-      setTokenCookie(res, refresh_token);
+      const access_token = generateAccessToken(user_id);
+
+      setRefreshTokenCookie(res, refresh_token);
+      setAccessTokenCookie(res, access_token);
 
       return res.status(201).json({ user: user.toAuthJSON() });
     } catch (err) {
+      console.log(err);
       res.status(500).send(err);
     }
   }
 );
-
 
 /**
  * @route {Post} /users/login
@@ -69,6 +72,7 @@ router.post(
     check("user.password", "Password is required").exists(),
   ],
   async (req, res) => {
+    console.log(req.body);
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -87,11 +91,14 @@ router.post(
 
       const user_id = user._id;
       const refresh_token = GenerateRefreshToken(user_id);
-      setTokenCookie(res, refresh_token);
+      const access_token = generateAccessToken(user_id);
+
+      setRefreshTokenCookie(res, refresh_token);
+      setAccessTokenCookie(res, access_token);
 
       return res.status(200).json({ user: user.toAuthJSON() });
     } catch (err) {
-      console.error(err.message);
+      console.error(err);
       res.status(500).send("Server error");
     }
   }
@@ -120,21 +127,29 @@ router.post("/refresh", verifyRefreshToken, (req, res) => {
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: process.env.JWT_ACCESS_TIME }
   );
-  const refresh_token = GenerateRefreshToken(user_id);
-  setTokenCookie(res, refresh_token);
-
-  return res.json({ success: true, access_token });
+  setAccessTokenCookie(res, access_token);
+  return res.status(200).send({ success: true, access_token });
 });
 
 //helpers
 
-function setTokenCookie(res, token) {
+function setRefreshTokenCookie(res, token) {
   // create http only cookie with refresh token that expires in 7 days
   const cookieOptions = {
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    sameSite: true,
   };
   res.cookie("refreshToken", token, cookieOptions);
+}
+
+function setAccessTokenCookie(res, token) {
+  const cookieOptions = {
+    httpOnly: true,
+    expires: new Date(Date.now() + 30 * 60 * 1000),
+    sameSite: true,
+  };
+  res.cookie("accessToken", token, cookieOptions);
 }
 
 function GenerateRefreshToken(user_id) {
@@ -154,6 +169,12 @@ function GenerateRefreshToken(user_id) {
   });
 
   return refresh_token;
+}
+
+function generateAccessToken(user_id) {
+  return jwt.sign({ sub: user_id }, process.env.JWT_ACCESS_SECRET, {
+    expiresIn: process.env.JWT_ACCESS_TIME,
+  });
 }
 
 module.exports = router;

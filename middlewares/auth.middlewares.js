@@ -4,30 +4,37 @@ const redis_client = require("../config/redis_connect");
 
 function verifyToken(req, res, next) {
   try {
-    if (typeof req.headers.authorization === "undefined") {
+    // if (typeof req.headers.authorization === "undefined") {
+    //   req.token = null;
+    //   next();
+    // }
+    // const token = req.headers.authorization.split(" ")[1];
+
+    if (typeof req.cookies.accessToken === "undefined") {
+      console.log(req.cookies);
       req.token = null;
       next();
+    } else {
+      const token = req.cookies.accessToken;
+      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      // console.log(decoded);
+      req.userData = decoded;
+
+      req.token = token;
+
+      // verify blacklisted access token.
+      redis_client.get("BL_" + decoded.sub.toString(), (err, data) => {
+        if (err) throw err;
+
+        if (data === token)
+          return res
+            .status(401)
+            .json({ status: false, message: "blacklisted token." });
+        next();
+      });
     }
-    const token = req.headers.authorization.split(" ")[1];
-
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    // console.log(decoded);
-    req.userData = decoded;
-
-    req.token = token;
-
-    // verify blacklisted access token.
-    redis_client.get("BL_" + decoded.sub.toString(), (err, data) => {
-      if (err) throw err;
-
-      if (data === token)
-        return res
-          .status(401)
-          .json({ status: false, message: "blacklisted token." });
-      next();
-    });
   } catch (error) {
-    // console.log(error);
+    console.log(error);
     return res.status(401).json({
       status: false,
       message: "Your session is not valid.",
@@ -63,6 +70,8 @@ function verifyRefreshToken(req, res, next) {
       next();
     });
   } catch (error) {
+    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken");
     return res.status(401).json({
       status: true,
       message: "Your session is not valid.",

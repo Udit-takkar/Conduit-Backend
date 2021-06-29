@@ -62,6 +62,7 @@ router.get("/", async (req, res) => {
       articlesCount,
     });
   } catch (err) {
+    console.log(err);
     return res.status(500).send(err);
   }
 });
@@ -218,7 +219,7 @@ router.delete("/:slug", verifyToken, async (req, res) => {
 
     if (article.author._id.toString() === user._id.toString()) {
       await Article.deleteOne({ slug });
-      return res.status(204);
+      return res.sendStatus(204);
     } else {
       return res.status(403).send("UnAuthorized");
     }
@@ -266,7 +267,7 @@ router.post("/:slug/favorite", verifyToken, async (req, res, next) => {
  * @desc marks an article unfavorite
  * @access Authentication Required
  */
-router.delete("/:slug/unfavorite", verifyToken, async (req, res, next) => {
+router.delete("/:slug/favorite", verifyToken, async (req, res, next) => {
   if (!req.token) {
     return res.sendStatus(401);
   }
@@ -378,7 +379,7 @@ router.delete("/:slug/comments/:id", verifyToken, async (req, res) => {
 
 /**
  * @route {get} /articles/:slug/comments
- * @desc gets all comments of an article
+ * @desc gets all comments of an article by slug
  * @access Authentication Optional
  */
 router.get("/:slug/comments", verifyToken, async (req, res) => {
