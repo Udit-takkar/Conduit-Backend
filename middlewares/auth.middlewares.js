@@ -4,12 +4,6 @@ const redis_client = require("../config/redis_connect");
 
 function verifyToken(req, res, next) {
   try {
-    // if (typeof req.headers.authorization === "undefined") {
-    //   req.token = null;
-    //   next();
-    // }
-    // const token = req.headers.authorization.split(" ")[1];
-
     if (typeof req.cookies.accessToken === "undefined") {
       console.log(req.cookies);
       req.token = null;
@@ -27,27 +21,40 @@ function verifyToken(req, res, next) {
         if (err) throw err;
 
         if (data === token)
-          return res
-            .status(401)
-            .json({ status: false, message: "blacklisted token." });
+          return res.status(401).json({
+            status: false,
+            message: "blacklisted token.",
+          });
         next();
       });
     }
   } catch (error) {
-    console.log(error);
     return res.status(401).json({
       status: false,
       message: "Your session is not valid.",
+
       data: error,
     });
   }
 }
 
 function verifyRefreshToken(req, res, next) {
+  if (typeof req.cookies.refreshToken === "undefined") {
+    return res.status(401).json({
+      status: false,
+      message: "Invalid request.",
+      refreshTokenError: true,
+    });
+  }
+
   const token = req.cookies.refreshToken;
 
   if (token === null)
-    return res.status(401).json({ status: false, message: "Invalid request." });
+    return res.status(401).json({
+      status: false,
+      message: "Invalid request.",
+      refreshTokenError: true,
+    });
   try {
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     req.userData = decoded;
@@ -60,11 +67,13 @@ function verifyRefreshToken(req, res, next) {
         return res.status(401).json({
           status: false,
           message: "Invalid request. Token is not in store.",
+          refreshTokenError: true,
         });
       if (JSON.parse(data).token != token)
         return res.status(401).json({
           status: false,
           message: "Invalid request. Token is not same in store.",
+          refreshTokenError: true,
         });
 
       next();
@@ -74,7 +83,8 @@ function verifyRefreshToken(req, res, next) {
     res.clearCookie("accessToken");
     return res.status(401).json({
       status: true,
-      message: "Your session is not valid.",
+      message: "Session Expired",
+      refreshTokenError: true,
       data: error,
     });
   }

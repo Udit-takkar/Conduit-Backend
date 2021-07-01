@@ -3,7 +3,10 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { body, check, validationResult } = require("express-validator");
-const { verifyRefreshToken } = require("../middlewares/auth.middlewares");
+const {
+  verifyRefreshToken,
+  verifyToken,
+} = require("../middlewares/auth.middlewares");
 const redis_client = require("../config/redis_connect");
 const User = require("../models/User");
 
@@ -104,10 +107,15 @@ router.post(
   }
 );
 
-// Logout function
-async function Logout(req, res) {
+router.delete("/logout", verifyToken, async (req, res) => {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  if (!req.token) {
+    return res.status(403).send("Forbidden");
+  }
+  console.log("Logout ");
   const user_id = req.userData.sub;
-  const token = req.headers.authorization.split(" ")[1];
+  const token = req.cookies.accessToken;
 
   // remove the refresh token
   await redis_client.del(user_id.toString());
@@ -115,8 +123,8 @@ async function Logout(req, res) {
   // blacklist current access token
   await redis_client.set("BL_" + user_id.toString(), token);
 
-  return res.json({ status: true, message: "success." });
-}
+  return res.sendStatus(204);
+});
 
 // Generate Access Token
 router.post("/refresh", verifyRefreshToken, (req, res) => {
